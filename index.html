@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Lineup Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .lineup-panel {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .simulation-panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* Field Visualization */
+        .field-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+        }
+        
+        .lineup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        /* Table fixes */
+        .lineup-panel {
+            overflow-x: auto;
+        }
+        
+        td input[type="number"] {
+            width: 50px;
+        }
+        
+        .bench-divider td {
+            background-color: #e9ecef;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            padding: 5px;
+        }
+
+        .field {
+            width: 180px;
+            height: 180px;
+            background-color: #4CAF50;
+            position: absolute;
+            top: 35px;
+            left: 35px;
+            transform: rotate(45deg);
+            border: 2px solid #388E3C;
+            border-radius: 15px;
+        }
+
+        .base {
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #333;
+            border: 1px solid #ccc;
+            transform: rotate(-45deg);
+            transition: background-color 0.2s;
+            z-index: 2;
+        }
+        
+        .base.active {
+            background-color: #FFC107;
+            border-color: #FFA000;
+        }
+
+        /* Position bases relative to the rotated square */
+        .base-1 { top: 0; right: 0; transform: translate(50%, -50%) rotate(-45deg); }
+        .base-2 { top: 0; left: 0; transform: translate(-50%, -50%) rotate(-45deg); }
+        .base-3 { bottom: 0; left: 0; transform: translate(-50%, 50%) rotate(-45deg); }
+        .base-home { bottom: 0; right: 0; transform: translate(50%, 50%) rotate(-45deg); border-radius: 50%; }
+
+        .scoreboard {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            text-align: center;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 1.1em;
+        }
+
+        .scoreboard-label {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            color: #bdc3c7;
+        }
+
+        .scoreboard-value {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+            font-size: 0.9em;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start { background-color: #2ecc71; color: white; }
+        .btn-stop { background-color: #e74c3c; color: white; }
+        .btn-reset { background-color: #95a5a6; color: white; }
+        .btn-batch { background-color: #9b59b6; color: white; }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type=range] {
+            flex: 1;
+        }
+
+        .stats-summary {
+            margin-top: 20px;
+            width: 100%;
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #b6e0fe;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        
+        .log-box {
+            width: 100%;
+            height: 150px;
+            border: 1px solid #ddd;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85em;
+            background: #fff;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .current-batter {
+            font-weight: bold;
+            color: #e67e22;
+            margin: 10px 0;
+            text-align: center;
+            height: 1.2em;
+        }
+
+        /* Drag and Drop Styles */
+        .lineup-row.over {
+            border: 2px dashed #2980b9;
+            background-color: #f0f8ff;
+        }
+        
+        .drag-handle {
+            user-select: none;
+            color: #999;
+        }
+
+        /* Histogram Styles */
+        #histogramContainer {
+            margin-top: 15px;
+            width: 100%;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .histogram-bars {
+            display: flex;
+            align-items: flex-end;
+            height: 100%;
+            width: 100%;
+            gap: 2px;
+            padding-bottom: 20px; /* Space for labels */
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .hist-bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 100%;
+            position: relative;
+        }
+        
+        .hist-bar {
+            width: 100%;
+            background-color: #3498db;
+            transition: height 0.3s ease;
+            min-height: 1px;
+        }
+        
+        .hist-label {
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7em;
+            color: #666;
+        }
+        
+        .batch-controls {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        /* Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .nav-tab {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #555;
+            transition: all 0.2s;
+        }
+
+        .nav-tab.active {
+            background: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+
+        .view-section {
+            display: none;
+            width: 100%;
+        }
+        
+        .view-section.active {
+            display: block;
+        }
+
+        /* League View Styles */
+        .league-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .league-controls {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .rank-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .rank-table th, .rank-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .rank-table th {
+            background-color: #f8f9fa;
+        }
+
+        .rank-table tr:hover {
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+        
+        .team-link {
+            font-weight: bold;
+            color: #2980b9;
+        }
+        
+        /* Modal / Detail View for Team */
+        .detail-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .detail-overlay.open {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .detail-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+        }
+
+        /* Re-use histogram styles for detail view */
+        .detail-card #detailHistogram {
+            height: 250px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚾ Probability Baseball Simulator</h1>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchView('single')">Single Team Sim</button>
+        <button class="nav-tab" onclick="switchView('league')">League Analysis</button>
+    </div>
+
+    <!-- Single Team View -->
+    <div id="single-view" class="view-section active">
+    <div class="container">
+        <!-- Lineup Configuration -->
+        <div class="panel lineup-panel">
+            <div class="lineup-header">
+                <h2>Lineup Configuration</h2>
+                <select id="teamSelect" style="padding: 5px; font-size: 1rem; border-radius: 4px;">
+                    <option value="mets">New York Mets</option>
+                    <option value="mariners">Seattle Mariners</option>
+                </select>
+            </div>
+            <p>Drag rows to reorder. Top 9 players are the starting lineup.</p>
+            <table id="lineupTable">
+                <thead>
+                    <tr>
+                        <th style="width: 30px">#</th>
+                        <th>Player Name</th>
+                        <th>1B %</th>
+                        <th>2B %</th>
+                        <th>3B %</th>
+                        <th>HR %</th>
+                        <th>BB %</th>
+                        <th>Out %</th>
+                        <th>wOBA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Generated by JS -->
+                </tbody>
+            </table>
+            <div style="margin-top: 15px; text-align: right;">
+                <button id="sortWobaBtn" class="btn-batch" style="background-color: #3498db; color: white; margin-right: 10px;">Sort by wOBA</button>
+                <button id="optimizeBtn" class="btn-batch" style="background-color: #f39c12; color: white; margin-right: 10px;">⚡ Optimize Order</button>
+                <button id="updateLineupBtn" class="btn-reset">Update/Reset Lineup</button>
+            </div>
+            <div id="optimizationStatus" style="text-align: right; margin-top: 5px; font-size: 0.9em; color: #27ae60; font-weight: bold; min-height: 1.2em;"></div>
+        </div>
+
+        <!-- Simulation Visualization -->
+        <div class="panel simulation-panel">
+            <div class="scoreboard">
+                <div>
+                    <div class="scoreboard-label">Inning</div>
+                    <div class="scoreboard-value" id="inningDisplay">1</div>
+                </div>
+                <div>
+                    <div class="scoreboard-label">Outs</div>
+                    <div class="scoreboard-value" id="outsDisplay">0</div>
+                </div>
+                <div>
+                    <div class="scoreboard-label">Runs</div>
+                    <div class="scoreboard-value" id="runsDisplay">0</div>
+                </div>
+            </div>
+
+            <div class="current-batter" id="currentBatterDisplay">Waiting to start...</div>
+
+            <div class="field-container">
+                <div class="field">
+                    <div class="base base-2" id="base2">2B</div>
+                    <div class="base base-1" id="base1">1B</div>
+                    <div class="base base-3" id="base3">3B</div>
+                    <div class="base base-home">H</div>
+                </div>
+            </div>
+
+            <div class="stats-summary">
+                <div class="stats-row">
+                    <strong>Games Simulated:</strong>
+                    <span id="gamesSimulated">0</span>
+                </div>
+                <div class="stats-row">
+                    <strong>Total Runs Scored:</strong>
+                    <span id="totalRuns">0</span>
+                </div>
+                <div class="stats-row" style="font-size: 1.1em; color: #2980b9; margin-top: 5px; padding-top: 5px; border-top: 1px solid #b6e0fe;">
+                    <strong>Avg Runs/Game:</strong>
+                    <span id="avgRuns">0.00</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-row">
+                    <button class="btn-start" id="startBtn">▶ Start Simulation</button>
+                    <button class="btn-stop" id="stopBtn" disabled>⏹ Stop</button>
+                </div>
+                <div class="speed-control">
+                    <label for="speedControl">Speed:</label>
+                    <input type="range" id="speedControl" min="1" max="2000" value="500" step="10">
+                    <span id="speedVal">500ms</span>
+                </div>
+                <div style="font-size: 0.8em; text-align: center; color: #666;">
+                    (Lower is faster)
+                </div>
+                <div class="batch-controls">
+                    <input type="number" id="batchSimInput" value="100" min="1" max="10000" style="width: 70px;" placeholder="N">
+                    <button class="btn-batch" id="batchSimBtn">Simulate Batch</button>
+                </div>
+            </div>
+            
+            <div id="histogramContainer"></div>
+
+            <div class="log-box" id="gameLog">
+                <div class="log-entry">Simulator ready.</div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- End Single View -->
+
+    <!-- League View -->
+    <div id="league-view" class="view-section">
+        <div class="league-container">
+            <div class="league-controls">
+                <h2>League-Wide Simulation</h2>
+                <p>Simulate seasons for all 30 teams and compare run production.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 15px;">
+                    <label>Games per Team:</label>
+                    <input type="number" id="leagueSimCount" value="162" min="10" max="1000" style="width: 80px; padding: 8px;">
+                    <button class="btn-batch" id="runLeagueBtn">Run League Sim</button>
+                </div>
+            </div>
+            
+            <div id="leagueResultsArea" style="display: none;">
+                <h3 style="margin-top: 0;">Rankings</h3>
+                <table class="rank-table" id="leagueTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Team</th>
+                            <th>Avg Runs/Game</th>
+                            <th>Max Runs</th>
+                            <th>Shutouts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Detail Modal -->
+    <div class="detail-overlay" id="detailOverlay">
+        <div class="detail-card">
+            <button class="close-btn" onclick="closeDetailModal()">×</button>
+            <h2 id="detailTeamName">Team Name</h2>
+            <div id="detailStats"></div>
+            <div id="detailHistogram" class="histogram-container"></div>
+        </div>
+    </div>
+
+    <script src="simulator.js"></script>
+    <script>
+        function switchView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(viewName + '-view').classList.add('active');
+            // Find button roughly
+            const btnIndex = viewName === 'single' ? 0 : 1;
+            document.querySelectorAll('.nav-tab')[btnIndex].classList.add('active');
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('detailOverlay').classList.remove('open');
+        }
+        
+        // Close on click outside
+        document.getElementById('detailOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('detailOverlay')) closeDetailModal();
+        });
+    </script>
+</body>
+</html>
