@@ -3641,13 +3641,49 @@ function init() {
         option.value = key;
         option.textContent = key.charAt(0).toUpperCase() + key.slice(1);
         if (key === 'mets') option.selected = true;
-        elements.teamSelect.appendChild(option);
+    elements.teamSelect.appendChild(option);
     });
 
-    loadLineup(teamData['mets']);
+    loadLineup(teamData["mets"]);
     setupEventListeners();
     resetGame();
     log("Ready to play ball!");
+    setupResizer();
+}
+
+function setupResizer() {
+    const resizer = document.getElementById("panelResizer");
+    const lineupPanel = document.getElementById("lineupPanel");
+    const simulationPanel = document.getElementById("simulationPanel");
+    let isResizing = false;
+
+    resizer.addEventListener("mousedown", (e) => {
+        isResizing = true;
+        document.body.style.cursor = "ew-resize";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (!isResizing) return;
+
+        const container = lineupPanel.parentElement;
+        const totalWidth = container.offsetWidth;
+        const mouseX = e.clientX;
+        
+        // Calculate percentage for lineupPanel
+        const lineupWidth = mouseX - container.offsetLeft; // Adjust for container's position
+        let newFlexBasis = (lineupWidth / totalWidth) * 100;
+
+        // Clamp values to prevent panels from disappearing
+        newFlexBasis = Math.max(30, Math.min(70, newFlexBasis)); 
+
+        lineupPanel.style.flexBasis = `${newFlexBasis}%`;
+        simulationPanel.style.flexBasis = `${100 - newFlexBasis}%`;
+    });
+
+    document.addEventListener("mouseup", () => {
+        isResizing = false;
+        document.body.style.cursor = "default";
+    });
 }
 
 function optimizeLineup() {

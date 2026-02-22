@@ -23,9 +23,9 @@
 
         .container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            max-width: 1200px;
+            flex-wrap: nowrap; /* Prevent wrapping */
+            gap: 0; /* Gap handled by resizer */
+            max-width: 1500px; /* Wider overall container */
             width: 100%;
             justify-content: center;
         }
@@ -35,31 +35,56 @@
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Include padding in width calculations */
+            display: flex; /* Ensure inner content respects flex */
+            flex-direction: column; /* Stack content vertically */
         }
 
         .lineup-panel {
-            flex: 2;
-            min-width: 300px;
+            flex: 0 0 65%; /* Start with Lineup Panel wider */
+            min-width: 600px; /* Minimum width to prevent excessive squishing */
+            resize: horizontal; /* Allow horizontal resizing */
+            overflow: auto; /* Allow internal scrolling if content overflows */
+            padding-right: 10px; /* Space for resize handle */
         }
 
         .simulation-panel {
-            flex: 1;
-            min-width: 300px;
+            flex: 0 0 35%; /* Remaining width */
+            min-width: 400px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
         }
 
+        /* Resizer styles */
+        .resizer {
+            width: 10px;
+            background: #ccc;
+            cursor: ew-resize;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+            margin: 0 5px;
+            border-radius: 5px;
+        }
+        
+        .resizer:hover {
+            background: #999;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9em;
+            min-width: 600px; /* Ensure table doesn't get too small */
         }
 
         th, td {
             text-align: left;
             padding: 10px;
             border-bottom: 1px solid #eee;
+            white-space: nowrap; /* Prevent text wrapping in cells */
         }
 
         th {
@@ -468,7 +493,7 @@
     <div id="single-view" class="view-section active">
     <div class="container">
         <!-- Lineup Configuration -->
-        <div class="panel lineup-panel">
+        <div class="panel lineup-panel" id="lineupPanel">
             <div class="lineup-header">
                 <h2>Lineup Configuration</h2>
                 <select id="teamSelect" style="padding: 5px; font-size: 1rem; border-radius: 4px;">
@@ -503,8 +528,11 @@
             <div id="optimizationStatus" style="text-align: right; margin-top: 5px; font-size: 0.9em; color: #27ae60; font-weight: bold; min-height: 1.2em;"></div>
         </div>
 
+        <!-- Resizer -->
+        <div class="resizer" id="panelResizer"></div>
+
         <!-- Simulation Visualization -->
-        <div class="panel simulation-panel">
+        <div class="panel simulation-panel" id="simulationPanel">
             <div class="scoreboard">
                 <div>
                     <div class="scoreboard-label">Inning</div>
